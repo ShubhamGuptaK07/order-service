@@ -20,6 +20,9 @@ spring:
     name: order-service
   config:
     import: configserver:http://localhost:9296
+  cloud:
+    compatibility-verifier:
+      enabled: false
 
 #eureka:
 #  instance:
