@@ -1,5 +1,6 @@
 package com.demo.orderservice.service;
 
+import brave.messaging.ProducerResponse;
 import com.demo.orderservice.entity.Order;
 import com.demo.orderservice.exception.CustomException;
 import com.demo.orderservice.external.client.PaymentService;
@@ -11,6 +12,7 @@ import com.demo.orderservice.respository.OrderRespository;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -24,6 +26,8 @@ public class OrderServiceImpl implements OrderService {
     private ProductService productService;
     @Autowired
     private PaymentService paymentService;
+    @Autowired
+    private RestTemplate restTemplate;
 
     @Override
     public long placeOrder(OrderRequest orderRequest) {
@@ -66,11 +70,21 @@ public class OrderServiceImpl implements OrderService {
         log.info("Get Order placed details for order id : {}", orderId);
         Order order = orderRespository.findById(orderId)
                 .orElseThrow(() -> new CustomException("Order not Found for the id: " + orderId, "ORDER_NOT_FOUND", 404));
+
+        log.info("Invoking the Product Service to fetch the product details for order id : {}", order.getOrderId());
+        OrderResponse.ProductDetails productDetails = restTemplate.getForObject(
+                "http://PRODUCT-SERVICE/product/" + order.getProductId(),
+                OrderResponse.ProductDetails.class
+        );
+        if (productDetails != null) {
+            productDetails.setQuantity(order.getQuantity());
+        }
         return OrderResponse.builder()
                 .orderId(order.getOrderId())
                 .orderStatus(order.getOrderStatus())
                 .orderDate(order.getOrderTime())
                 .amount(order.getAmount())
+                .productDetails(productDetails)
                 .build();
     }
 }
