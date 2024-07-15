@@ -79,12 +79,18 @@ public class OrderServiceImpl implements OrderService {
         if (productDetails != null) {
             productDetails.setQuantity(order.getQuantity());
         }
+        log.info("Invoking the Payment Service to fetch the payment details for order id : {}", order.getOrderId());
+        OrderResponse.PaymentDetails paymentDetails = restTemplate.getForObject(
+                "http://PAYMENT-SERVICE/payment/" + order.getOrderId(),
+                OrderResponse.PaymentDetails.class
+        );
         return OrderResponse.builder()
                 .orderId(order.getOrderId())
                 .orderStatus(order.getOrderStatus())
                 .orderDate(order.getOrderTime())
                 .amount(order.getAmount())
                 .productDetails(productDetails)
+                .paymentDetails(paymentDetails)
                 .build();
     }
 }
